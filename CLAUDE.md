@@ -240,6 +240,62 @@ Browser auto-login -> access_token (1hr) + refresh_token
 | Cookie + CSRF (form POST) | No |
 | Cookie + reCAPTCHA | Yes |
 
+## Public Repository
+
+This project has a **separate public repo** for portfolio/interview purposes:
+
+| Repo | URL | Purpose |
+|------|-----|---------|
+| **Private** (primary) | `achristo84/mw-bi-suite` | Active development, all features |
+| **Public** (portfolio) | `achristo84/mw-bi-suite-public` | Clean showcase for interviewers |
+
+### Git Remotes
+
+The local clone has two remotes configured:
+- `origin` → private repo (`achristo84/mw-bi-suite`)
+- `public` → public repo (`achristo84/mw-bi-suite-public`)
+
+The `public-repo-prep` branch tracks what's published. The public repo's `main` = this branch.
+
+### Publishing Features to Public
+
+**CRITICAL**: Never push directly from `main` to the public repo. Always go through `public-repo-prep` to avoid leaking sensitive data.
+
+Workflow after completing a feature on `main`:
+
+```bash
+# 1. Switch to the public branch
+git checkout public-repo-prep
+
+# 2. Cherry-pick the feature commits (use a range for multiple)
+git cherry-pick <commit-hash>           # single commit
+git cherry-pick <start>..<end>          # range of commits
+
+# 3. Review the diff for sensitive data before pushing
+git diff public/main..HEAD
+
+# 4. Push to public repo
+git push public public-repo-prep:main
+
+# 5. Switch back to main for continued development
+git checkout main
+```
+
+### What Must NOT Go Public
+
+Before pushing to public, verify none of these are in the diff:
+- Real GCP project IDs, Cloud Run URLs, Cloud SQL instance names
+- Real email addresses (e.g., `drew@millandwhistle.com`)
+- API keys, tokens, passwords (even in examples — use `YOUR_*` placeholders)
+- Street addresses or other PII
+- Content from the parent-level CLAUDE.md (contains live infrastructure details)
+
+What IS fine to keep:
+- "Mill & Whistle" business name
+- "Vermont" location references
+- Distributor names (already fictional)
+- All application code and architecture docs
+
 ## Session Tracking
 
 See `DEVELOPMENT.md` at repo root for:
