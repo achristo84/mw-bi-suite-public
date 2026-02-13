@@ -1,0 +1,44 @@
+# Core
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-dotenv>=1.0.0
+
+# Database
+sqlalchemy>=2.0.25
+psycopg2-binary>=2.9.9
+alembic>=1.13.1
+
+# Async support
+asyncpg>=0.29.0
+sqlalchemy[asyncio]>=2.0.25
+
+# Validation
+pydantic>=2.5.3
+pydantic-settings>=2.1.0
+
+# HTTP client (for Claude API)
+httpx>=0.26.0
+
+# Cloud
+google-cloud-storage>=2.14.0
+google-cloud-secret-manager>=2.18.0
+
+# Gmail API
+google-auth>=2.27.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.116.0
+
+# PDF parsing (for invoice extraction)
+anthropic>=0.40.0  # Requires 0.40+ for PDF document support
+
+# Utilities
+python-multipart>=0.0.6  # For file uploads
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+
+# Browser capture (optional - for stealth auth capture)
+# pip install seleniumbase playwright && playwright install chromium
+# seleniumbase>=4.32.0
+# playwright>=1.48.0
