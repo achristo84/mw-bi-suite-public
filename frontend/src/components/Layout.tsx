@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { FileText, Upload, Settings, Menu, X, Package, DollarSign, ChefHat, Link2, ShoppingCart, Search, History, TrendingUp } from 'lucide-react'
+import { FileText, Upload, Settings, Menu, X, Package, DollarSign, ChefHat, Link2, ShoppingCart, Search, History, TrendingUp, UtensilsCrossed } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ const navigation = [
   // Main section
   { name: 'Invoices', href: '/', icon: FileText },
   { name: 'Upload', href: '/upload', icon: Upload },
+  { name: 'Menu', href: '/menu', icon: UtensilsCrossed },
   { name: 'Recipes', href: '/recipes', icon: ChefHat },
   { name: 'Ingredients', href: '/ingredients', icon: Package },
   { name: 'Map SKUs', href: '/ingredients/map', icon: Link2 },

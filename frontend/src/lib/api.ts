@@ -27,7 +27,14 @@ import type {
 
 // Re-export types that components need
 export type { UnmappedDistIngredient }
-import type { RecipeWithDetails, RecipeListResponse, RecipeCostBreakdown } from '@/types/recipe'
+import type {
+  RecipeWithDetails,
+  RecipeListResponse,
+  RecipeCostBreakdown,
+  MenuItemCostBreakdown,
+  MenuAnalyzerResponse,
+  PriceMoverResponse,
+} from '@/types/recipe'
 
 const API_BASE = '/api/v1'
 
@@ -467,6 +474,47 @@ export async function updateRecipe(
 
 export async function deleteRecipe(id: string): Promise<void> {
   await fetchAPI(`/recipes/${id}`, { method: 'DELETE' })
+}
+
+// ============================================================================
+// Menu Item Cost & Analyzer
+// ============================================================================
+
+export async function getMenuItemCost(
+  id: string,
+  params?: {
+    pricing_mode?: 'recent' | 'average'
+    average_days?: number
+  }
+): Promise<MenuItemCostBreakdown> {
+  const searchParams = new URLSearchParams()
+  if (params?.pricing_mode) searchParams.set('pricing_mode', params.pricing_mode)
+  if (params?.average_days) searchParams.set('average_days', params.average_days.toString())
+
+  const query = searchParams.toString()
+  return fetchAPI<MenuItemCostBreakdown>(`/menu-items/${id}/cost${query ? `?${query}` : ''}`)
+}
+
+export async function getMenuAnalysis(params?: {
+  pricing_mode?: 'recent' | 'average'
+  average_days?: number
+  category?: string
+}): Promise<MenuAnalyzerResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.pricing_mode) searchParams.set('pricing_mode', params.pricing_mode)
+  if (params?.average_days) searchParams.set('average_days', params.average_days.toString())
+  if (params?.category) searchParams.set('category', params.category)
+
+  const query = searchParams.toString()
+  return fetchAPI<MenuAnalyzerResponse>(`/menu-items/analyze${query ? `?${query}` : ''}`)
+}
+
+export async function getMenuMovers(days?: number): Promise<PriceMoverResponse> {
+  const searchParams = new URLSearchParams()
+  if (days) searchParams.set('days', days.toString())
+
+  const query = searchParams.toString()
+  return fetchAPI<PriceMoverResponse>(`/menu-items/analyze/movers${query ? `?${query}` : ''}`)
 }
 
 export async function addRecipeIngredient(

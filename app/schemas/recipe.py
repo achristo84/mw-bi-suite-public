@@ -278,6 +278,103 @@ class MenuItemCostBreakdown(BaseModel):
     total_cost_cents: int = 0
     gross_margin_cents: int = 0
     food_cost_percent: Decimal = Decimal("0")
+    recipe_cost_breakdown: Optional[RecipeCostBreakdown] = None
+    packaging_breakdown: list["PackagingCostItem"] = []
+    has_unpriced_ingredients: bool = False
+    margin_status: str = "healthy"  # healthy, warning, danger
+
+
+class PackagingCostItem(BaseModel):
+    """Cost for a single packaging item."""
+
+    ingredient_id: UUID
+    ingredient_name: str
+    quantity: Decimal
+    usage_rate: Decimal
+    price_per_unit_cents: Optional[Decimal] = None
+    cost_cents: Optional[int] = None
+    has_price: bool = False
+
+
+class MenuItemAnalysis(BaseModel):
+    """Single menu item with margin analysis."""
+
+    id: UUID
+    name: str
+    category: Optional[str] = None
+    menu_price_cents: int
+    total_cost_cents: int
+    food_cost_percent: Decimal
+    gross_margin_cents: int
+    margin_status: str  # healthy, warning, danger
+    recipe_name: Optional[str] = None
+    portion_of_recipe: Decimal
+    has_unpriced_ingredients: bool = False
+
+
+class CategorySummary(BaseModel):
+    """Per-category margin aggregation."""
+
+    total_items: int = 0
+    avg_food_cost_percent: Decimal = Decimal("0")
+    healthy_count: int = 0
+    warning_count: int = 0
+    danger_count: int = 0
+
+
+class MenuAnalyzerSummary(BaseModel):
+    """Summary stats for the menu analyzer."""
+
+    total_items: int = 0
+    avg_food_cost_percent: Decimal = Decimal("0")
+    healthy_count: int = 0
+    warning_count: int = 0
+    danger_count: int = 0
+    by_category: dict[str, CategorySummary] = {}
+
+
+class MenuAnalyzerResponse(BaseModel):
+    """Full menu analyzer response."""
+
+    items: list[MenuItemAnalysis] = []
+    summary: MenuAnalyzerSummary = MenuAnalyzerSummary()
+
+
+class AffectedMenuItem(BaseModel):
+    """A menu item affected by a price change."""
+
+    name: str
+    cost_impact_cents: int
+
+
+class IngredientMover(BaseModel):
+    """An ingredient with a significant price change."""
+
+    ingredient_id: UUID
+    ingredient_name: str
+    old_price_per_unit: Optional[Decimal] = None
+    new_price_per_unit: Optional[Decimal] = None
+    change_percent: Optional[Decimal] = None
+    affected_items: list[AffectedMenuItem] = []
+
+
+class ItemMover(BaseModel):
+    """A menu item with significant cost change."""
+
+    menu_item_id: UUID
+    menu_item_name: str
+    old_total_cost: int
+    new_total_cost: int
+    cost_change_cents: int
+    new_food_cost_percent: Decimal
+
+
+class PriceMoverResponse(BaseModel):
+    """Price movers response."""
+
+    period_days: int = 7
+    ingredient_movers: list[IngredientMover] = []
+    item_movers: list[ItemMover] = []
 
 
 # ============================================================================
@@ -346,3 +443,4 @@ class BatchImportResult(BaseModel):
 
 # Update forward references
 RecipeCostBreakdown.model_rebuild()
+MenuItemCostBreakdown.model_rebuild()

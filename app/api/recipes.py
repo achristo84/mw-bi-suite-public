@@ -26,6 +26,9 @@ from app.schemas.recipe import (
     MenuItemList,
     MenuItemPackagingCreate,
     MenuItemPackagingResponse,
+    MenuItemCostBreakdown,
+    MenuAnalyzerResponse,
+    PriceMoverResponse,
     RecipeImportRequest,
     RecipeImportFromDataRequest,
     RecipeImportResult,
@@ -33,7 +36,12 @@ from app.schemas.recipe import (
     BatchImportResult,
     RecipeCostBreakdown,
 )
-from app.services.cost_calculator import calculate_recipe_cost
+from app.services.cost_calculator import (
+    calculate_recipe_cost,
+    calculate_menu_item_cost,
+    calculate_all_menu_item_costs,
+    get_price_movements,
+)
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 menu_router = APIRouter(prefix="/menu-items", tags=["menu-items"])
@@ -627,6 +635,70 @@ def preview_spreadsheet(
 # ============================================================================
 # Menu Item Endpoints
 # ============================================================================
+
+
+@menu_router.get("/analyze", response_model=MenuAnalyzerResponse)
+def analyze_menu_items(
+    pricing_mode: str = Query("recent", regex="^(recent|average)$"),
+    average_days: int = Query(30, ge=1, le=365),
+    category: str = Query(None, description="Filter by category"),
+    db: Session = Depends(get_db),
+):
+    """
+    Analyze all menu items with costs, margins, and margin health status.
+
+    Returns per-item analysis and summary statistics.
+    Margin thresholds: <30% = healthy, 30-35% = warning, >35% = danger.
+    """
+    return calculate_all_menu_item_costs(
+        db,
+        pricing_mode=pricing_mode,  # type: ignore
+        average_days=average_days,
+        category=category,
+    )
+
+
+@menu_router.get("/analyze/movers", response_model=PriceMoverResponse)
+def get_menu_movers(
+    days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
+    pricing_mode: str = Query("recent", regex="^(recent|average)$"),
+    average_days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+):
+    """
+    Get ingredients and menu items with the biggest price changes.
+
+    Returns ingredient-level price movements and their impact on menu item costs.
+    """
+    return get_price_movements(
+        db,
+        days_back=days,
+        pricing_mode=pricing_mode,  # type: ignore
+        average_days=average_days,
+    )
+
+
+@menu_router.get("/{menu_item_id}/cost", response_model=MenuItemCostBreakdown)
+def get_menu_item_cost(
+    menu_item_id: UUID,
+    pricing_mode: str = Query("recent", regex="^(recent|average)$"),
+    average_days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+):
+    """
+    Get full cost breakdown for a single menu item.
+
+    Includes recipe cost (scaled by portion), packaging cost, margin, and food cost %.
+    """
+    try:
+        return calculate_menu_item_cost(
+            db,
+            menu_item_id,
+            pricing_mode=pricing_mode,  # type: ignore
+            average_days=average_days,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @menu_router.get("", response_model=MenuItemList)

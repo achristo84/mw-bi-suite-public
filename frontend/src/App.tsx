@@ -17,6 +17,9 @@ import { OrderHub } from '@/pages/OrderHub'
 import { CartBuilder } from '@/pages/CartBuilder'
 import { OrderHistory } from '@/pages/OrderHistory'
 import { ItemPriceHistory } from '@/pages/ItemPriceHistory'
+import { Menu } from '@/pages/Menu'
+import { MenuAnalyzer } from '@/pages/MenuAnalyzer'
+import { MenuItemDetail } from '@/pages/MenuItemDetail'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +44,9 @@ function App() {
               <Route path="/orders/build" element={<CartBuilder />} />
               <Route path="/orders/history" element={<OrderHistory />} />
               <Route path="/orders/prices" element={<ItemPriceHistory />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/menu/analyze" element={<MenuAnalyzer />} />
+              <Route path="/menu/:id" element={<MenuItemDetail />} />
               <Route path="/recipes" element={<Recipes />} />
               <Route path="/recipes/new" element={<RecipeEdit />} />
               <Route path="/recipes/:id" element={<RecipeDetail />} />
