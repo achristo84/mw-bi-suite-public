@@ -120,7 +120,7 @@ mw-bi-suite/
 
 **Base unit normalization.** Every ingredient quantity converts to grams, milliliters, or each. This makes cross-distributor comparison possible: a 36-lb case and a 50-lb case both reduce to price-per-gram.
 
-**Confidence-based review.** Invoice parsing produces a confidence score. High confidence (>0.9) can auto-approve. Low confidence (<0.7) gets full manual review. The system learns which distributor formats parse cleanly.
+**Confidence-based review with adaptive prompts.** Invoice parsing produces a confidence score. High confidence (>0.9) can auto-approve. Low confidence (<0.7) gets full manual review. When parsing fails, operators refine the prompt through a side-by-side comparison UI and save the winning version -- a human-in-the-loop feedback cycle that improves extraction accuracy per distributor over time. See [Adaptive Parsing](#adaptive-parsing-human-in-the-loop-prompt-optimization) below.
 
 **Component ingredients.** An ingredient like "Cold Brew Concentrate" can link to the recipe that produces it. Its cost is derived from the recipe's ingredient costs divided by yield -- no manual price entry needed.
 
@@ -255,6 +255,63 @@ This project uses Anthropic's Claude API in two ways:
 2. **Price List Parsing** (Haiku) -- Parses ad-hoc price information from screenshots, emails, or text snippets into structured price data.
 
 Both use Haiku for cost efficiency (~$0.01 per invoice parse). The structured output format ensures consistent data regardless of input quality.
+
+### Adaptive Parsing: Human-in-the-Loop Prompt Optimization
+
+The system implements a feedback loop where human operators improve Claude's parsing accuracy over time -- essentially RLHF applied to prompt engineering rather than model weights.
+
+**How it works:**
+
+```
+  New invoice arrives
+        │
+        v
+  Parse with distributor's prompt
+  (or base prompt if first time)
+        │
+        v
+  ┌─ Confidence ≥ 0.9 ──> Auto-approve, prices flow into system
+  │
+  ├─ Confidence 0.7-0.9 ──> Quick review, operator confirms/corrects
+  │
+  └─ Confidence < 0.7 ──> Full review ──> Operator opens Prompt Editor
+                                                    │
+                                                    v
+                                          ┌──────────────────┐
+                                          │  Side-by-side UI  │
+                                          │                   │
+                                          │  LEFT:  Original  │
+                                          │  prompt + results  │
+                                          │                   │
+                                          │  RIGHT: Modified  │
+                                          │  prompt + results  │
+                                          └────────┬─────────┘
+                                                   │
+                                          Iterate: edit prompt,
+                                          click "Try", compare
+                                                   │
+                                                   v
+                                          Save winning prompt
+                                          to distributor record
+                                                   │
+                                                   v
+                                          All future invoices from
+                                          this distributor use the
+                                          optimized prompt
+```
+
+**What makes this HITL rather than simple configuration:**
+
+- **Feedback is grounded in output quality.** The operator sees exactly how a prompt change affects parsed results before committing. This is A/B testing at the prompt level.
+- **Knowledge accumulates per distributor.** Each distributor develops its own optimized prompt that encodes domain knowledge -- "PFG invoices have quantity in column 2, not column 3" or "Sysco credits appear as negative line items."
+- **Three prompt channels.** Each distributor stores separate prompts for PDF invoices, email text, and screenshots/price lists, since the same distributor's data looks different across formats.
+- **Non-technical operators can participate.** The UI abstracts away prompt engineering -- operators just tweak instructions in plain English and see if the output improves. No ML expertise required.
+
+**Technical implementation:**
+- Per-distributor prompt storage: `distributors.parsing_prompt_pdf`, `parsing_prompt_email`, `parsing_prompt_screenshot` (text columns)
+- Preview endpoint: `POST /invoices/{id}/reparse-preview` -- parses without saving, returns results + prompt used
+- Prompt management: `GET/PATCH /distributors/{id}/prompts` -- fetch current prompts, save optimized versions
+- Frontend: `PromptEditorModal` component with side-by-side comparison, multi-format save
 
 ## Cost
 
