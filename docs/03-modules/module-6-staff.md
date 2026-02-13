@@ -169,7 +169,7 @@ Applicants receive a link to self-schedule:
 │  │                                                              │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                      │
-│  Location: Mill & Whistle, 123 Main St, Wilmington VT               │
+│  Location: Mill & Whistle                                           │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
