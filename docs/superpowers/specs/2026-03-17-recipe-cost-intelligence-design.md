@@ -93,7 +93,7 @@ Request:
   "price_scenarios": [
     {
       "ingredient_id": "<uuid>",
-      "price_per_base_unit_cents": 4.2,
+      "price_per_base_unit_cents": 4.2,  // Decimal, not integer — sub-cent precision required (e.g., $0.042/gram)
       "price_type": "observed",
       "distributor_name": "Distributor A",
       "dist_ingredient_id": "<uuid>"
@@ -138,13 +138,13 @@ Response:
 }
 ```
 
-Implementation: Uses existing `cost_calculator` logic but overrides specific ingredient prices with scenario values before computing. Pure read + compute — no database writes.
+Implementation: Uses existing `cost_calculator` logic but overrides specific ingredient prices with scenario values before computing. Pure read + compute — no database writes. The `get_ingredient_best_price()` and `calculate_recipe_cost()` functions gain an optional `price_overrides: dict[UUID, Decimal]` parameter (ingredient_id → price_per_base_unit) that, when provided, bypasses the database lookup for those ingredients.
 
 ### 2.2 Menu Items Dashboard
 
 **`GET /api/v1/menu-items/dashboard`**
 
-Returns all active menu items with costs, margins, and price-type confidence indicators.
+Extends the existing `GET /menu-items/analyze` endpoint (which returns `MenuAnalyzerResponse` via `calculate_all_menu_item_costs()`). The dashboard endpoint adds price-type confidence indicators and per-ingredient cost drivers to the existing cost/margin data. Implementation should extend the existing `MenuItemAnalysis` schema rather than creating a parallel response type.
 
 Query params:
 - `pricing_mode`: `"recent"` (default) or `"average"`
@@ -192,12 +192,14 @@ Response includes per-item:
 
 **`GET /api/v1/distributor-search`** (existing endpoint, modified behavior)
 
-After returning search results, the backend now passively records prices to `PriceHistory` for results that match existing `DistIngredient` records:
+After returning search results, the backend passively records observed price changes via a background task (fire-and-forget, does not block the search response):
 
 1. Check if the search result's SKU + distributor matches an existing `DistIngredient`.
 2. If yes, check if that `DistIngredient` has any confirmed price history.
-3. If yes, and the search result price differs from the most recent confirmed price, create a `PriceHistory` entry with `price_type='observed'` and `source='order_hub_search'`.
+3. If yes, and the search result price differs from the most recent confirmed price, upsert a `PriceHistory` entry with `price_type='observed'` and `source='order_hub_search'`. **Deduplication**: only one `observed` entry per `dist_ingredient_id` per day — if one already exists for today, update the price rather than creating a duplicate.
 4. If no existing `DistIngredient` match, skip (no auto-creation of SKU mappings).
+
+Note: This write happens asynchronously after the search response is returned, keeping the GET semantics clean (the response itself is pure read). The background task handles the price capture side effect.
 
 Search response enhanced with:
 ```json
@@ -343,7 +345,7 @@ Creates a new Google Sheet with the recipe formatted for sharing:
 - Instructions (numbered steps)
 - Cost breakdown (optional, controlled by query param `include_costs=true`)
 
-Requires adding `spreadsheets` write scope to the existing Sheets service (currently `spreadsheets.readonly`).
+Requires upgrading the OAuth scope from `spreadsheets.readonly` to `spreadsheets` in `SheetsService`. Since the existing OAuth refresh token in Secret Manager was consented for the readonly scope, a one-time re-authorization is needed to grant the broader scope, and the stored refresh token must be updated.
 
 Response:
 ```json
