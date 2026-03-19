@@ -12,7 +12,7 @@ Built as a solo project to solve real operational problems at a small business i
 
 **Recipe Costing** -- Recipes pull live ingredient prices to calculate real-time food costs. Component ingredients (like house-made cold brew) derive their price from the recipe that produces them. Menu items show margin analysis against selling price.
 
-**Order Hub** -- Search across five distributor APIs simultaneously, compare prices side-by-side, build carts with minimum-order tracking, and generate orders. Browser automation handles OAuth flows for distributors with anti-bot protection.
+**Order Hub** -- Search across five distributor APIs simultaneously, compare prices side-by-side, build carts with minimum-order tracking, and generate orders. Browser automation handles OAuth flows.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Built as a solo project to solve real operational problems at a small business i
 | **Frontend** | React, TypeScript, Vite, Tailwind CSS | Component model fits complex UI (modals, tables, search), mobile-responsive |
 | **Database** | PostgreSQL 15 (Cloud SQL) | Relational model fits the domain perfectly -- prices, recipes, invoices are all relational |
 | **Invoice Parsing** | Claude Haiku API | Handles messy PDF layouts (columnar invoices, credits, multi-format) at low cost |
-| **Browser Automation** | SeleniumBase UC + Playwright CDP | Anti-bot evasion for distributor portals with OAuth/reCAPTCHA |
+| **Browser Automation** | SeleniumBase UC + Playwright CDP | Handles complex OAuth/reCAPTCHA authentication flows on distributor portals |
 | **Hosting** | GCP Cloud Run | Scales to zero, ~$25/mo total infrastructure cost |
 | **CI/CD** | GitHub Actions + Workload Identity Federation | Keyless auth to GCP, auto-deploy on push to main |
 | **Migrations** | Alembic | Schema versioning with up/down migrations |
@@ -124,7 +124,7 @@ mw-bi-suite/
 
 **Component ingredients.** An ingredient like "Cold Brew Concentrate" can link to the recipe that produces it. Its cost is derived from the recipe's ingredient costs divided by yield -- no manual price entry needed.
 
-**Browser automation for auth.** Some distributors use Azure B2C OAuth with PKCE, reCAPTCHA, or sophisticated anti-bot detection. SeleniumBase UC handles initial auth; refresh tokens keep sessions alive without repeated browser launches.
+**Browser automation for auth.** Some distributors use Azure B2C OAuth with PKCE, reCAPTCHA, or other complex authentication flows. SeleniumBase UC handles initial auth; refresh tokens keep sessions alive without repeated browser launches.
 
 ## Phase Roadmap
 
